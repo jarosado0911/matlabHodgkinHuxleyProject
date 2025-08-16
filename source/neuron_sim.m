@@ -18,18 +18,45 @@ function neuron_sim(dt,filename)
     record_index = cell2mat(brchlst);
 
     % this outputs some general information abou the cell to the console
-    fprintf('\nNeuron Information....')
-    fprintf('\n Num nodes:      %s\n',num2str(n));
-    fprintf(' Num edges:      %s\n',num2str(nEdges));
-    fprintf(' Branch nodes:   %s\n', num2str(record_index));
-    fprintf(' Boundary nodes: %s\n', num2str(cell2mat(blst)));
-    fprintf('mean dx = %f microns\n', dx_mean);
-    fprintf('maxl dx = %f microns\n', dx_max);
-    fprintf('minl dx = %f microns\n', dx_min);
-    fprintf('medl dx = %f microns\n', dx_med);
-    fprintf('time dt = %f seconds\n', dt);
+    fprintf('\nNeuron Information....\n')
+    fprintf(' Num nodes:        %s\n',num2str(n));
+    fprintf(' Num edges:        %s\n',num2str(nEdges));
+    fprintf(' Branch nodes:     %s\n', num2str(record_index));
+    fprintf(' Boundary nodes:   %s\n', num2str(cell2mat(blst)));
+    fprintf(' mean dx =         %f microns\n', dx_mean);
+    fprintf(' maxl dx =         %f microns\n', dx_max);
+    fprintf(' minl dx =         %f microns\n', dx_min);
+    fprintf(' medl dx =         %f microns\n', dx_med);
+    fprintf(' time dt =         %f seconds\n', dt);
 
     % I really do not use dx because the stencil has to compute the dx for each
     % edge when making the stencil entries
     dx = dx_mean*1e-6; 
+
+    % Set the Hodgkinx Huxley Parameters
+    P = hh_params();                    
+    print_hh_params(P);
+    
+    % Set the simulation Parameters
+    S = sim_params(dt);         
+    print_sim_params(S);
+
+    %------------------------Initialize solution space------------------------%
+    u=ones(n,1).*vStart;  % this is our voltage solution vector
+    somaId=[];
+    % Here I find the soma for voltage clamp, it may not always be the ind = 1
+    % it could be multiple indices in fact, but for our VR it is usually i = 1
+    for i=1:n
+        if strcmp(subset{i},'soma')
+            somaId = [somaId,i];
+            %break
+        end
+    end
+    clamp = somaId;
+    
+    % Here I initialize the gating variables m,n, and h
+    % these are our state variable solution vectors
+    nn=zeros(n,1); nn(:,1)=ni;
+    mm=zeros(n,1); mm(:,1)=mi;
+    hh=zeros(n,1); hh(:,1)=hi;
 end
