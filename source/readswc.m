@@ -7,7 +7,9 @@ function [A, id, pid, coord, r, subset] = readswc(filename)
 %   coord: [N x 3] double
 %   r:     [N x 1] double
 %   subset:{N x 1} labels
-
+%-------------------------------------------------------------------------%
+% Written by James Rosado 09/20/2019
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     fid = fopen(filename, 'r');
     if fid == -1
         error('readswc:OpenFailed','Cannot open file: %s', filename);
