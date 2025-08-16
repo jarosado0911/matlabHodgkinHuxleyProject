@@ -65,19 +65,55 @@ function [M,nLst,bLst,brchLst,numNodes,numEdges,meanEdge,maxEdge,minEdge,medEdge
     graphPng = fullfile(outDir, [baseName '_graph.png']);
     sparsityPng = fullfile(outDir, [baseName '_sparsity.png']);
 
+    % ---- Custom 3D plot: nodes and edges colored by distance from origin ----
     if makeFigures
-        % 3D neuron graph
         f1 = figure('Visible', figVisibility);
-        plot(G, 'XData', coord(1:end,1), ...
-                'YData', coord(1:end,2), ...
-                'ZData', coord(1:end,3));
-        title(sprintf('Neuron Graph: %s', baseName), 'Interpreter','none');
-        xlabel('x (\mum)'); ylabel('y (\mum)'); zlabel('z (\mum)');
+        hold on
         axis equal
+        view(3)
+    
+        % Compute distance of each node from origin (0,0,0)
+        dist = sqrt(sum(coord.^2, 2));
+    
+        % Normalize distances for colormap mapping
+        cmap = jet(256);              % choose a colormap
+        distNorm = (dist - min(dist)) / (max(dist) - min(dist) + eps);
+        colors = cmap(floor(distNorm*255)+1, :);
+    
+        % Plot nodes as scatter points
+        scatter3(coord(:,1), coord(:,2), coord(:,3), ...
+                 36, colors, 'filled');   % 36 = point size, adjust as needed
+    
+        % Plot edges: match line width to point "diameter"
+        lw = 2.5;   % line width roughly similar to scatter point size
+        for e = 1:height(G.Edges)
+            % get endpoints
+            n1 = G.Edges.EndNodes(e,1);
+            n2 = G.Edges.EndNodes(e,2);
+    
+            % average color of the two nodes
+            c = mean([colors(n1,:); colors(n2,:)], 1);
+    
+            % plot edge
+            plot3([coord(n1,1), coord(n2,1)], ...
+                  [coord(n1,2), coord(n2,2)], ...
+                  [coord(n1,3), coord(n2,3)], ...
+                  '-', 'Color', c, 'LineWidth', lw);
+        end
+    
+        % Colorbar to show distance scale
+        colormap(cmap);
+        cb = colorbar;
+        ylabel(cb, 'Distance from origin (\mum)');
+    
+        title(sprintf('Neuron Graph Colored by Distance: %s', baseName), ...
+              'Interpreter','none');
+        xlabel('x (\mum)'); ylabel('y (\mum)'); zlabel('z (\mum)');
+    
         if saveOut
             exportgraphics(f1, graphPng, 'Resolution', 200);
         end
-
+        
         % Sparsity (Hines matrix visualization)
         f2 = figure('Visible', figVisibility);
         spy(M + speye(size(M)));  % show diagonal
