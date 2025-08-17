@@ -14,7 +14,7 @@ function print_sim_params(S)
 
   fn = fieldnames(S);
   w  = max(cellfun(@numel, fn));
-  fprintf('Simulation parameters:\n');
+  fprintf('\nSimulation parameters:\n');
   for i = 1:numel(fn)
     k   = fn{i};
     val = S.(k);

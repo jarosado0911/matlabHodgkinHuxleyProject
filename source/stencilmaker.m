@@ -23,11 +23,12 @@ RHS=zeros(n);
 [~,nLst,~,~,n,~,~,~,~,~]=getgraphstructure(filename,false,false);
 
 % print some information
-fprintf('n  = %i nodes\n',n)
-fprintf('dt = %d [s]\n',dt)
-fprintf('dx = %d [m], this is average dx\n',dx)
-fprintf('R  = %d  [Ohm.m]\n', R)
-fprintf('C  = %d  [F/m2]\n',C)
+fprintf('\nStencil Maker Parameters...\n')
+fprintf(' n  = %i nodes\n',n)
+fprintf(' dt = %d [s]\n',dt)
+fprintf(' dx = %d [m], this is average dx\n',dx)
+fprintf(' R  = %d  [Ohm.m]\n', R)
+fprintf(' C  = %d  [F/m2]\n',C)
 
 for i=1:n
     % get neighborlist
