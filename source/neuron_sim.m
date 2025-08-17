@@ -49,7 +49,6 @@ function neuron_sim(dt,filename)
     for i=1:n
         if strcmp(subset{i},'soma')
             somaId = [somaId,i];
-            %break
         end
     end
     clamp = somaId;
