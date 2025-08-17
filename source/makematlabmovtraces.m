@@ -7,7 +7,8 @@ function makematlabmovtraces(dataFolder, geometryFile, outname, idx)
 
     % ---------------- Geometry ----------------
     % need id & pid to build edges
-    [~, id, pid, coords, r, ~] = readswc(geometryFile);
+    [~, id, pid, coords, r, ~]  = readswc(geometryFile);
+    [~,~,~,brchlst,~,~,~,~,~,~] = getgraphstructure(geometryFile,false,false,false); 
     markerSize = (r./max(r)) * 50;
 
     % child->parent connectivity (indices into coords)
@@ -79,6 +80,19 @@ function makematlabmovtraces(dataFolder, geometryFile, outname, idx)
     % nodes
     hDots = scatter3(axLeft, coords(:,1), coords(:,2), coords(:,3), ...
                      markerSize, 'filled', 'CData', u0);
+
+    if iscell(brchlst), branch_idx = cell2mat(brchlst);
+    else,               branch_idx = brchlst(:);
+    end
+    if idx < 1 || idx > numel(branch_idx)
+        error('idx=%d out of range for brchlst (numel=%d).', idx, numel(branch_idx));
+    end
+    focusNode = branch_idx(idx);                  % coordinate index to highlight
+    focusSize = max(120, 4*markerSize(focusNode));% make it stand out
+    hFocus = scatter3(axLeft, ...
+        coords(focusNode,1), coords(focusNode,2), coords(focusNode,3), ...
+        focusSize, 'o', 'MarkerFaceColor',[1 0 0], 'MarkerEdgeColor','w', 'LineWidth',1.5);
+    uistack(hFocus,'top');   
 
     view(axLeft, 2);  % XY
     colormap(fig, 'jet');
