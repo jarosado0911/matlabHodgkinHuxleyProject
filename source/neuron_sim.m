@@ -1,4 +1,4 @@
-function neuron_sim(dt,filename,save)
+function neuron_sim(dt,filename,sv)
 
     % global radius variable
     global a  
@@ -87,8 +87,8 @@ function neuron_sim(dt,filename,save)
             u(clamp)=S.vClamp;
         end
 
-        % if mysave is 1 then save the current voltage of entire cell to file
-        if save == 1
+        % if save is 1 then save the current voltage of entire cell to file
+        if sv == 1
             writematrix(u,sprintf('%sdata/vm_t%i.dat',dir,i))
         end
 
@@ -122,6 +122,11 @@ function neuron_sim(dt,filename,save)
             u(clamp)=S.vClamp;
         end  
     end
+
+    % set time values for output
+    t=dt*(0:S.nT);
+    save(sprintf('%s/time.mat',dir),'t');
+    makematlabmov('../output/results',filename,'../output/testvideo');
 end
 
 function f = make_gate_rhs(aFun, bFun)

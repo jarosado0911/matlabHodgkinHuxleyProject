@@ -4,7 +4,7 @@ function P = hh_params(varargin)
 %   P = hh_params('gna',60e1,'gl',3e1) overrides fields by name-value.
 
   P = struct( ...
-    'R'  , 250e-2 , ...   % ohm·m
+    'R'  , 250e-1 , ...   % ohm·m
     'C'  , 1e-2    , ...  % F/m^2  (≈1 µF/cm^2)
     'gk' , 5e1     , ...  % S/m^2
     'ek' , -90e-3  , ...  % V
