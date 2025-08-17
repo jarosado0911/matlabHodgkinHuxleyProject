@@ -1,0 +1,4 @@
+# Ignore everything inside output/results/data/
+output/results/data/*
+# but keep a placeholder so the folder exists in the repo
+!output/results/data/.gitkeep

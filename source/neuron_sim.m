@@ -126,7 +126,18 @@ function neuron_sim(dt,filename,sv)
     % set time values for output
     t=dt*(0:S.nT);
     save(sprintf('%s/time.mat',dir),'t');
+
+    % --- choose output dir (avoid shadowing 'dir') ---
+    outDir  = fullfile('..','output','results');
+    if ~isfolder(outDir), mkdir(outDir); end
+    
+    % --- pack useful metadata & signals and save (v7.3 handles big arrays) ---
+    save(fullfile(outDir,'trace_data.mat'), ...
+         't','usoma','rec_u','rec_h','rec_m','rec_n','-v7.3');
+
     makematlabmov('../output/results',filename,'../output/testvideo');
+
+    % plottimeseries(t,rec_u,3);
 end
 
 function f = make_gate_rhs(aFun, bFun)
