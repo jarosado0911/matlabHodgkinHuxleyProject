@@ -12,6 +12,9 @@ figure(2)
 hold on
 sbdf2solve(dt,clamp_index,recvect,filename,outfolder,'SBDF2',1);
 
+outfolder   = '../output/strang0MD_results';
+strangsolve('mid',dt,clamp_index,recvect,0,filename,outfolder,'STRANGF0-MD',1);
+
 outfolder   = '../output/strang0TR_results';
 strangsolve('tr',dt,clamp_index,recvect,0,filename,outfolder,'STRANGF0-TR',1);
 

@@ -54,6 +54,9 @@ rX = @(v, ss, P) gates.X(v, ss, P);
 
 % set ODE time solve
 switch(method)
+    case 'mid'
+        ODEstep = @(u, s, dt, fun)    timestep.mid(u, s, dt, fun);
+        ODEstepX= @(u, s, dt, fun, P) timestep.mid(u, s, dt, fun, P);
     case 'tr'
         ODEstep = @(u, s, dt, fun)    timestep.tr(u, s, dt, fun);
         ODEstepX= @(u, s, dt, fun, P) timestep.tr(u, s, dt, fun, P);

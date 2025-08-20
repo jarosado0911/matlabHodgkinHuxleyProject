@@ -1,5 +1,27 @@
 classdef timestep
     methods (Static)
+        %--- Implicit Midpoint
+        function result = mid(v,pp,dt,fun,P)
+            % Check if the optional parameter P is provided
+            if nargin < 5  % P is not provided
+                result = timestep.midS(v, pp, dt, fun);
+            else  % P is provided
+                result = timestep.midX(v, pp, dt, fun, P);
+            end 
+        end
+
+        function result = midS(v,pp,dt,fun)
+            a = fun(v,0); b = -1.*fun(v,1);
+            result = (pp.*(1-0.5.*dt.*(a+b))+dt.*a);
+            result = result ./ (1+0.5.*dt.*(a+b));
+        end
+
+        function result = midX(v,pp,dt,fun,P)
+            b = fun(0,pp,P); a = fun(1,pp,P)-b;
+            result = (1+0.5.*dt.*a).*v + dt.*b;
+            result = result ./ (1-0.5.*dt.*a);
+        end
+
         %--- Trapezoid method
         function result = tr(v,pp,dt,fun,P)
             % Check if the optional parameter P is provided
