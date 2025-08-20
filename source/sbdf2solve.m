@@ -34,14 +34,8 @@ RHS = Id;
 
 dLHS = decomposition(LHS);
 
-% this preallocates a matrix for saving recorded voltage
-%u_rec = zeros(length((0:S.nT)),length(rec_ind));
-%n_rec = zeros(length((0:S.nT)),length(rec_ind));
-%m_rec = zeros(length((0:S.nT)),length(rec_ind));
-%h_rec = zeros(length((0:S.nT)),length(rec_ind));
-
- % initialize empty recording vectors
- usoma=[]; rec_u =[]; rec_h =[]; rec_m =[]; rec_n =[]; 
+% initialize empty recording vectors
+usoma=[]; rec_u =[]; rec_h =[]; rec_m =[]; rec_n =[]; 
 
 % wrappers that match (u,s) -> F(s, a(u), b(u))
 Fn = @(u,s) gates.F(s, gates.an(u), gates.bn(u));
@@ -85,12 +79,6 @@ for i=0:S.nT
     if saveall == 1
         writematrix(u,sprintf('%s/data/vm_t%i.dat',dir,i));
     end
-
-    % records the voltage
-    %for ii=1:length(rec_ind)
-    %    u_rec(i+1,ii) = u(rec_ind(ii));  n_rec(i+1,ii) = nn(rec_ind(ii));
-    %    m_rec(i+1,ii) = mm(rec_ind(ii)); h_rec(i+1,ii) = hh(rec_ind(ii));
-    %end
     
     fprintf('t= %f [s]\n',i*dt)
 end
@@ -109,11 +97,6 @@ xlabel('time [ms]')
 ylabel('voltage [mV]')
 legend('show')
 
-% save the output recorded voltage
-%save(sprintf('%s/u_rec.mat',outputFolder),'u_rec');
-%save(sprintf('%s/n_rec.mat',outputFolder),'n_rec');
-%save(sprintf('%s/m_rec.mat',outputFolder),'m_rec');
-%save(sprintf('%s/h_rec.mat',outputFolder),'h_rec');
 save(fullfile(outputFolder,'trace_data.mat'), ...
          't','rec_u','rec_n','rec_h','rec_m','rec_n','-v7.3');
 % save soma voltage and time voltage as .mat files
