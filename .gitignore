@@ -2,3 +2,6 @@
 output/results/data/*
 # but keep a placeholder so the folder exists in the repo
 !output/results/data/.gitkeep
+*.dat
+*.mp4
+*.mat

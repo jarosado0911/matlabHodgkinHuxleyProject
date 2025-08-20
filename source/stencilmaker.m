@@ -1,34 +1,28 @@
-function [LHS, RHS] = stencilmaker(n,dt,dx,R,a,C,filename)
+function A = stencilmaker(n,R,a,C,filename)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % stencilMaker  this generates the stencil matrix for the diffusion solve
 % of the operator spliting for the Hodgkin Huxley model equations
 %   n = number of vertices in graph geometry
-%   dt = time step size which is fixed
-%   dx = this is the average --> this is NOT used need to remove later!
 %   R = this is the specific resistance
 %   a = vector of radii at each vertex
 %   C = this is the membrane capacitance which is fixed
-%
+%   fileaname = this is the path/geometry.swc
 %   Written by James Rosado 09/20/2019
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 format long
 % Initialize LHS and RHS matrices
-LHS=zeros(n);
-RHS=zeros(n);
+A=zeros(n);
 
 % get coordinates of the vertices of geometry
 [~,~,~,coord,~,~]=readswc(filename);
 
 % get the neigborlist, and number of nodes
-[~,nLst,~,~,n,~,~,~,~,~]=getgraphstructure(filename,false,false);
+[~,nLst,~,~,n,~,~,~,~,~]=getgraphstructure(filename,false,false,false);
 
 % print some information
-fprintf('\nStencil Maker Parameters...\n')
-fprintf(' n  = %i nodes\n',n)
-fprintf(' dt = %d [s]\n',dt)
-fprintf(' dx = %d [m], this is average dx\n',dx)
-fprintf(' R  = %d  [Ohm.m]\n', R)
-fprintf(' C  = %d  [F/m2]\n',C)
+fprintf('n = %i nodes\n',n)
+fprintf('R = %d  [Ohm.m]\n', R)
+fprintf('C = %d  [F/m2]\n',C)
 
 for i=1:n
     % get neighborlist
@@ -49,23 +43,13 @@ for i=1:n
     end
     aveLengths = mean(edgeLengths);
     
-    % Set main diagonal entries for non terminal points    
-    RHS(i,i)= 1 - ((dt*sumRecip)/(2*R*C*aveLengths));
-    LHS(i,i)= 1 + ((dt*sumRecip)/(2*R*C*aveLengths));
-    
+    A(i,i) =  -1*((sumRecip)/(R*C*aveLengths));    
     % Set off diagonal Entries
     for j=1:lenN
-        RHS(i,nghbr(j)) = dt/(2*R*C*aveLengths*edgeLengths(j)*a(i)*(a(nghbr(j))^(-2)+a(i)^(-2)));
-        LHS(i,nghbr(j)) = -dt/(2*R*C*aveLengths*edgeLengths(j)*a(i)*(a(nghbr(j))^(-2)+a(i)^(-2)));
+        A(i,nghbr(j)) = 1/(R*C*aveLengths*edgeLengths(j)*a(i)*(a(nghbr(j))^(-2)+a(i)^(-2)));   
     end
 end
 
-% leave this comment
-% set dirichelet boundary for soma clamp! this maybe studied further
-%  LHS(1,:)=0; LHS(1,1)=1;
-%  RHS(1,:)=0; RHS(1,1)=1;
-
 % store as sparse matrix to save memory!
-LHS = sparse(LHS);
-RHS = sparse(RHS);
+A = sparse(A);
 end

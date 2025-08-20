@@ -1,6 +1,6 @@
 # MATLAB Hodgkin–Huxley Neuron Project
 
-![Demo](output/testvideo2.gif)
+![Demo](output/sbdf2_results/testvideo2.gif)
 
 > Simulate and visualize action potential propagation on real neuron morphologies (SWC), with operator-splitting diffusion–reaction (Hodgkin–Huxley) and publication-ready plots/movies.
 

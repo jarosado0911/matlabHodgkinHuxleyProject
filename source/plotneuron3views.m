@@ -129,7 +129,7 @@ function draw_swc_colored(ax, coord, id, pid, d, lw)
     end
 
     % Nodes colored by distance as well
-    scatter3(ax, coord(:,1), coord(:,2), coord(:,3), 7, d, 'filled');
+    scatter3(ax, coord(:,1), coord(:,2), coord(:,3), 2, d, 'filled');
 
     grid(ax,'on'); set(ax,'YDir','normal');
 end
