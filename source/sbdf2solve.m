@@ -1,4 +1,4 @@
-function sbdf2solve(dt,clamp_index,rec_ind,filename,outputFolder)
+function sbdf2solve(dt,clamp_index,rec_ind,filename,outputFolder,pname)
 
 % read radius and subset names from readSWC function
 [~,~,~,~,a,~]=readswc(filename);
@@ -85,7 +85,7 @@ end
 t=dt*(0:S.nT);
 
 for i=1:length(rec_ind)
-    dispname = sprintf('Index = %i',rec_ind(i));
+    dispname = sprintf('%s',pname);
     plot(t.*1e3,u_rec(:,i)*.1e3,'DisplayName', dispname);
 end
 

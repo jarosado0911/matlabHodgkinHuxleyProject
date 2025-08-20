@@ -8,7 +8,14 @@ classdef gates
         % nn = input state n for sodium channels
         function result = X(v,ss,P)
             mm = ss(:,1); nn = ss(:,2); hh = ss(:,3);
-            result = (-1/P.C).*(P.gk.*nn.^4.*(v-P.ek)+P.gna.*mm.^3.*hh.*(v-P.ena)+P.gl.*(v-P.el));
+            a = (-1/P.C) * (P.gk .* nn.^4 + ...
+                            P.gna .* mm.^3 .* hh + ...
+                            P.gl);
+            
+            b = (1/P.C) * (P.gk .* nn.^4 .* P.ek + ...
+                           P.gna .* mm.^3 .* hh .* P.ena + ...
+                           P.gl .* P.el);
+            result = a.*v +b;
         end
 
 
