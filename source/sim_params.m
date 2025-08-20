@@ -15,11 +15,12 @@ function S = sim_params(dt, varargin)
     'dt'     , dt, ...        % s
     'endTime', 50e-3, ...     % s
     'delay'  , 15e-3, ...     % s
+    'stop'   , 30*1e-3, ...   % s
     'vStart' , 0e-3, ...      % V
     'vClamp' , 50e-3, ...     % V
-    'ni'     , 0.0376969, ... % gating initial (dimensionless)
-    'mi'     , 0.0147567, ... % gating initial (dimensionless)
-    'hi'     , 0.995941 ...   % gating initial (dimensionless)
+    'ni'     , 0.00654, ...   %0.0376969, ... % gating initial (dimensionless)
+    'mi'     , 0.00654, ...   %0.0147567, ... % gating initial (dimensionless)
+    'hi'     , 0.9997 ...    %0.995941 ...   % gating initial (dimensionless)
   );
 
   % Overrides (name/value)
