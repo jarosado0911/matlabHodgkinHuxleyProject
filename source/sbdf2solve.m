@@ -85,10 +85,11 @@ end
 
 % set time values for output
 t=dt*(0:S.nT);
+ylim([-10,50])
 
 for i=1:length(rec_ind)
     dispname = sprintf('%s',pname);
-    plot(t.*1e3,rec_u(i,:)*.1e3,'DisplayName', dispname);
+    plot(t.*1e3,rec_u(i,:).*1e3,'DisplayName', dispname);
 end
 
 % set the figure titles
