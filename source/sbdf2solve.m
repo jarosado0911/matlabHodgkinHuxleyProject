@@ -1,4 +1,4 @@
-function sbdf2solve(dt,clamp_index,rec_ind,filename,outputFolder,pname)
+function sbdf2solve(dt,clamp_index,rec_ind,filename,outputFolder,pname,saveall)
 
 % read radius and subset names from readSWC function
 [~,~,~,~,a,~]=readswc(filename);
@@ -72,6 +72,10 @@ for i=0:S.nT
         u = dLHS\(RHS*b);
     end
     
+    if saveall == 1
+        writematrix(u,sprintf('%s/data/vm_t%i.dat',dir,i));
+    end
+
     % records the voltage
     for ii=1:length(rec_ind)
         u_rec(i+1,ii) = u(rec_ind(ii));  n_rec(i+1,ii) = nn(rec_ind(ii));
