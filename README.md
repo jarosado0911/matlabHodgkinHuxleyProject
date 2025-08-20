@@ -6,22 +6,36 @@
 
 ---
 
+# MATLAB Hodgkin–Huxley Project
+
+Hodgkin–Huxley (HH) neuron model utilities and solvers in MATLAB, including:
+- SWC morphology parsing
+- Graph construction & visualization (3D neuron views + Hines sparsity)
+- Multiple time-stepping methods (SBDF2; Strang splitting with FE/BE/TR/RK4)
+- Trace plotting and movie generation
+
+> This README reflects the repository **as uploaded** (zip contents). Paths and commands match the current `source/`, `data/`, and `output/` layout.
+
+---
+
 ## Table of Contents
+
 - [Overview](#overview)
-- [Repository Layout](#repository-layout)
+- [Directory Structure](#directory-structure)
 - [Requirements](#requirements)
+- [Installation](#installation)
 - [Quick Start](#quick-start)
-- [Running a Simulation](#running-a-simulation)
-- [Visualizations](#visualizations)
-  - [A. 3 views of the neuron](#a-3-views-of-the-neuron)
-  - [B. Stencil heatmaps (LHS/RHS)](#b-stencil-heatmaps-lhsrhs)
-  - [C. Movie with time-series traces](#c-movie-with-time-series-traces)
-  - [D. Plot a single time-series](#d-plot-a-single-time-series)
-- [Parameters](#parameters)
-  - [Hodgkin–Huxley parameters (`hh_params.m`) †](#hodgkinhuxley-parameters-hh_paramsm-)
-  - [Simulation parameters (`sim_params.m`)](#simulation-parameters-sim_paramsm)
-- [Data & Outputs](#data--outputs)
-- [Convert MP4 → GIF](#convert-mp4--gif)
+- [Data](#data)
+- [Simulation Methods](#simulation-methods)
+  - [SBDF2](#sbdf2)
+  - [Strang Splitting Variants](#strang-splitting-variants)
+- [API Reference](#api-reference)
+  - [I/O & Geometry](#io--geometry)
+  - [Solvers](#solvers)
+  - [Visualization & Postprocessing](#visualization--postprocessing)
+  - [Parameters](#parameters)
+- [Outputs](#outputs)
+- [Reproducibility Tips](#reproducibility-tips)
 - [Troubleshooting](#troubleshooting)
 - [License](#license)
 
@@ -29,218 +43,263 @@
 
 ## Overview
 
-This project simulates transmembrane voltage dynamics on a neuron graph extracted from an SWC morphology. The PDE–ODE system is advanced by **Strang operator splitting**: a diffusion linear solve (stencil matrices **LHS/RHS**) alternates with Hodgkin–Huxley **reaction** (gating variable ODEs).
+This project provides a modular workflow to simulate membrane dynamics on neuron morphologies:
 
-Outputs include:
-- Per-node voltage snapshots (`vm_t*.dat`) suitable for movies
-- Time vector (`time.mat`)
-- Recorded traces at branch nodes (`trace_data.mat`)
-- Optional movie (`.mp4`) and demo GIF
+1. **Import morphology** from SWC (`readswc.m`).
+2. **Construct graph** (adjacency, neighbors, branch/boundary nodes) and **visualize** (`getgraphstructure.m`, `plotneuron3views.m`).
+3. **Assemble stencils** for the cable equation (`stencilmaker.m`).
+4. **Integrate in time** using:
+   - **SBDF2** (semi-implicit, stiff-friendly) via `sbdf2solve.m`
+   - **Strang splitting** with multiple sub-integrators (`strangsolve.m` with `'fe'|'be'|'tr'|'rk4'|...`)
+5. **Plot traces** and **export videos** (`plottimeseries.m`, `makematlabmovtraces.m`).
 
 ---
 
-## Repository Layout
+## Directory Structure
+```
+matlabHodgkinHuxleyProject-main
+├── data
+│   ├── ref1.swc
+│   ├── ref2.swc
+│   ├── ref3.swc
+│   ├── ref4.swc
+│   ├── ref5.swc
+│   ├── ref6.swc
+│   ├── ref7.swc
+│   └── ref8.swc
+├── output
+│   └── sbdf2_results
+│       ├── sbdf2neuron.png
+│       └── testvideo2.gif
+├── source
+│   ├── gates.m
+│   ├── getgraphstructure.m
+│   ├── hh_params.m
+│   ├── makematlabmovtraces.m
+│   ├── plotneuron3views.m
+│   ├── plottimeseries.m
+│   ├── readswc.m
+│   ├── runsim.m
+│   ├── sbdf2solve.m
+│   ├── sim_params.m
+│   ├── stencilmaker.m
+│   ├── strangsolve.m
+│   └── timestep.m
+├── .gitignore
+├── LICENSE
+└── README.md
+```
 
-```
-data/                         # Sample morphologies (.swc)
-output/
-  results/
-    time.mat                  # time vector t
-    trace_data.mat            # rec_u, rec_h, rec_n, rec_m, etc.
-  testvideo.mp4               # demo movie
-  testvideo2.mp4              # alternate demo movie
-  testvideo2.gif              # GIF used in README banner
-  *_graph.png, *_sparsity.png # example diagnostics
-source/
-  getgraphstructure.m
-  hh_params.m
-  makematlabmov.m
-  makematlabmovtraces.m
-  neuron_sim.m
-  plotneuron3views.m
-  plotstencilheatmaps.m
-  plottimeseries.m
-  print_hh_params.m
-  print_sim_params.m
-  readswc.m
-  sim_params.m
-  stencilmaker.m
-test/                         # simple tests
-README.md
-LICENSE
-```
+- `source/` — MATLAB functions and scripts
+- `data/` — example SWC morphologies (`ref*.swc`)
+- `output/` — created by scripts at runtime (figures, videos, log files)
 
 ---
 
 ## Requirements
 
-- **MATLAB** (R2020b+ recommended; base MATLAB only is fine)
-- For MP4→GIF (optional):
-  - MATLAB-only script provided below, or
-  - **FFmpeg** on PATH (Windows: `winget install FFmpeg.FFmpeg`), for best quality
+- **MATLAB** R2019a or newer recommended (uses `readmatrix`, `graph`, etc.)
+- Standard toolboxes only (no proprietary toolboxes required)
 
-Add the code folder to the MATLAB path once per session:
+---
+
+## Installation
+
+From a MATLAB session started at the repository root:
+
 ```matlab
-addpath(genpath('source'));
+addpath('source');        % add project functions to your path
+savepath;                 % optional: persist to MATLAB pathdef
 ```
 
 ---
 
 ## Quick Start
 
-Run a short simulation on the included SWC and generate outputs:
+Run the bundled demo that exercises multiple solvers and exports figures/movies:
 
 ```matlab
-addpath(genpath('source'));
-
-dt = 1e-5;                              % 10 µs
-geom = 'data/0-2a.CNG.swc';             % example morphology
-neuron_sim(dt, geom, 1);                % sv=1 saves vm_t*.dat frames
-
-% Optional: movie + traces visualization
-makematlabmovtraces('output/results', geom, 'output/testvideo2', 1);
+addpath('source');
+run('source/runsim.m');
 ```
 
-This will populate `output/results/` with `time.mat`, `trace_data.mat`, and (if `sv=1`) a `data/` folder of per-frame voltages. The `makematlabmovtraces` call writes `output/testvideo2.mp4` (and you can convert to GIF—see below).
+What it does:
+- Loads `../data/ref2.swc`
+- Plots neuron geometry (3 orthogonal views)
+- Runs `sbdf2solve` and several `strangsolve` variants (`'tr'`, `'hn'`, `'be'`, `'fe'`, `'rk4'`)
+- Writes results under `output/*`
 
----
-
-## Running a Simulation
-
-```matlab
-dt   = 1e-5;                     % time step (seconds)
-geom = 'data/0-2a.CNG.swc';      % or data/refinement_*.swc
-
-neuron_sim(dt, geom, 1);         % third arg sv: 1 = save frames, 0 = don't
-```
-Key behaviors:
-- Saves `output/results/time.mat` (`t`) and `output/results/trace_data.mat` (traces)
-- If `sv==1`, also saves per-frame voltages as `output/results/data/vm_t<k>.dat`
-- The solver prints basic geometry stats and the parameter tables it uses
-
----
-
-## Visualizations
-
-### A. 3 views of the neuron
+Minimal example:
 
 ```matlab
-[A,id,pid,coord,~,~] = readswc('data/0-2a.CNG.swc'); %#ok<ASGLU>
-plotneuron3views(coord, id, pid, 'output/neuron_views.png');  % saves PNG
-```
+addpath('source');
 
-### B. Stencil heatmaps (LHS/RHS)
+% Parse morphology
+[A, id, pid, coord, r, subset] = readswc('data/ref2.swc');
 
-```matlab
-% Build matrices and visualize
-P = hh_params();
-[~,~,~,~,n,~,dx,~,~,~] = getgraphstructure(geom,false,false,false);
-[LHS,RHS] = stencilmaker(n, dt, dx, P.R, A(:,6), P.C, geom); % A(:,6) = radii
-plotstencilheatmaps(LHS, RHS);  % side-by-side normalized heatmaps
-```
+% Build graph and visualize
+[M, nLst, bLst, brchLst, nNodes, nEdges, meanEdge, maxEdge, minEdge, medEdge] = ...
+    getgraphstructure('data/ref2.swc', true, true, false);
 
-### C. Movie with time-series traces
-
-Left: morphology colored by voltage; Right: 4 stacked plots of recorded traces (u/h/n/m) for the selected branch index.
-
-```matlab
-makematlabmovtraces('output/results', geom, 'output/testvideo2', 1);  % idx=1
-```
-
-> **Tip:** The highlighted large red dot in the left pane shows which **branch node** the right-hand traces correspond to (`idx`th element of the saved `record_index`).
-
-### D. Plot a single time-series
-
-```matlab
-S = load('output/results/trace_data.mat');  % loads t, rec_u, rec_h, rec_n, rec_m
-plottimeseries(S.t, S.rec_u, 3);            % plot voltage for branch index 3
+% One-step of a solver (example call signature)
+dt = 4.0e-5;
+sbdf2solve(dt, 1, 105, 'data/ref2.swc', 'output/sbdf2_results', 'SBDF2', true);
 ```
 
 ---
 
-## Parameters
+## Data
 
-### Hodgkin–Huxley parameters (`hh_params.m`) †
+Example morphologies are included:
 
-```matlab
-P = hh_params();                    % defaults
-P = hh_params('gna',60e1,'gl',3e1); % override any field(s)
-```
+- `data/ref1.swc`, `data/ref2.swc`, ..., `data/ref8.swc`
 
-Fields (MKS units): `R, C, gk, ek, gna, ena, gl, el`.
-
-† A printed table is shown at runtime via `print_hh_params(P)`.
-
-### Simulation parameters (`sim_params.m`)
-
-```matlab
-S = sim_params(1e-5);                              % uses your dt
-S = sim_params(1e-5,'endTime',80e-3,'vClamp',60e-3);
-```
-
-Fields: `dt, endTime, delay, vStart, vClamp, nT, ni, mi, hi`.  
-Printed via `print_sim_params(S)`.
+Any valid SWC should work. Header lines (`# ...`) are supported by `readswc.m`.
 
 ---
 
-## Data & Outputs
+## Simulation Methods
 
-- `output/results/time.mat` → `t` vector (seconds)
-- `output/results/trace_data.mat` → variables:
-  - `t` (T×1), `usoma` (T×1), and branch-node traces:
-  - `rec_u` (B×T, volts), `rec_h`, `rec_m`, `rec_n` (B×T, unitless)
-  - `record_index` (B×1) — indices of the branch nodes in the morphology
-- (optional) `output/results/data/vm_t<k>.dat` → per-node voltage snapshots (volts) for movies
+### SBDF2
 
-The **branch-node order** in traces matches `record_index`. The movie/trace tools use the same index `idx` to select which branch node to display.
+`sbdf2solve.m` implements **Second-Order Backward Differentiation Formula** with semi-implicit treatment (well-suited to stiff ionic currents / diffusion terms).
+
+**Signature**
+```matlab
+sbdf2solve(dt, clamp_index, rec_ind, filename, outputFolder, pname, saveall)
+```
+
+- `dt` — time step (seconds)
+- `clamp_index` — node index for current clamp (stimulus)
+- `rec_ind` — receiver index / vector for recording
+- `filename` — SWC path (e.g., `'data/ref2.swc'`)
+- `outputFolder` — destination for figures/movies
+- `pname` — plot/file prefix
+- `saveall` — logical flag to write plots/videos
+
+### Strang Splitting Variants
+
+`strangsolve.m` implements **operator splitting** with sub-integrators selectable via the first argument:
+
+- `'fe'` — Forward Euler
+- `'be'` — Backward Euler
+- `'tr'` — Trapezoid (Crank–Nicolson)
+- `'rk4'` — Classical Runge–Kutta 4
+- `'hn'` — Heun (explicit trapezoid)
+
+**Signature**
+```matlab
+strangsolve(method, dt, clamp_index, rec_ind, force, filename, outputFolder, pname, saveall)
+```
+
+- `method` — one of `'fe'|'be'|'tr'|'rk4'|'hn'`
+- other parameters mirror `sbdf2solve`
 
 ---
 
-## Convert MP4 → GIF
+## API Reference
 
-**MATLAB-only** conversion (no FFmpeg needed):
+### I/O & Geometry
 
-```matlab
-function mp4_to_gif(mp4Path, gifPath, fps, maxDim)
-if nargin < 3, fps = 12; end
-if nargin < 4, maxDim = 640; end
-v = VideoReader(mp4Path); dt = 1/fps; nextT = 0; first = true;
-while hasFrame(v)
-    f = readFrame(v);
-    if v.CurrentTime+1e-6 < nextT, continue; end, nextT = nextT + dt;
-    scale = min(1, maxDim / max(size(f,1), size(f,2))); if scale<1, f = imresize(f, scale); end
-    if first, [A,map] = rgb2ind(f,256,'nodither'); imwrite(A,map,gifPath,'gif','LoopCount',Inf,'DelayTime',dt); first=false;
-    else, A = rgb2ind(f,map,'nodither'); imwrite(A,map,gifPath,'gif','WriteMode','append','DelayTime',dt); end
-end
-end
-```
-Usage:
-```matlab
-mp4_to_gif('output/testvideo2.mp4','output/testvideo2.gif',12,640);
-```
+- **`readswc.m`**
+  ```matlab
+  [A, id, pid, coord, r, subset] = readswc(filename)
+  ```
+  Reads an SWC file (skips `#` headers, spaces/tabs tolerated).  
+  Returns numeric matrix `A = [id type x y z r pid]`, integer `id/pid`, coordinates `coord`, radii `r`, and type labels `subset`.
 
-**FFmpeg** (best quality, if installed):
-```bash
-ffmpeg -y -i output/testvideo2.mp4 -vf "fps=12,scale=640:-1:flags=lanczos,palettegen" /tmp/pal.png
-ffmpeg -y -i output/testvideo2.mp4 -i /tmp/pal.png -lavfi "fps=12,scale=640:-1:flags=lanczos,paletteuse=dither=bayer:bayer_scale=5" output/testvideo2.gif
-```
+- **`getgraphstructure.m`**
+  ```matlab
+  [M, nLst, bLst, brchLst, numNodes, numEdges, meanEdge, maxEdge, minEdge, medEdge] = ...
+      getgraphstructure(filename, plt, verbose, saveOut)
+  ```
+  Builds a MATLAB `graph` from SWC, adjacency `M`, neighbor lists, boundary & branch nodes, and edge-length stats.  
+  If `plt` or `saveOut` is true, renders 3D neuron and Hines sparsity (`spy`). When `saveOut`, images/logs go to `../output/`.
+
+### Solvers
+
+- **`sbdf2solve.m`** — see [SBDF2](#sbdf2)
+
+- **`strangsolve.m`** — see [Strang Splitting Variants](#strang-splitting-variants)
+
+- **`stencilmaker.m`**
+  ```matlab
+  A = stencilmaker(n, R, a, C, filename)
+  ```
+  Assembles system matrices/stencils for the cable equation given node/edge data (`n`, `R`, radii `a`, capacitance `C`, and geometry file).
+
+- **`timestep.m`**
+  ```matlab
+  result = tr(v, pp, dt, fun, P)   % plus other methods within
+  ```
+  Time-stepping kernels (e.g., trapezoid, RK, etc.) used by the solvers.
+
+### Visualization & Postprocessing
+
+- **`plotneuron3views.m`** — 3 orthogonal 3D plots of the neuron graph.
+  ```matlab
+  plotneuron3views(coord, id, pid, outPngPath)
+  ```
+
+- **`plottimeseries.m`** — plot time traces for selected nodes/variables.
+
+- **`makematlabmovtraces.m`** — assemble a movie from saved trace images (MP4/GIF depending on your MATLAB/export setup).
+  ```matlab
+  makematlabmovtraces(dataFolder, geometryFile, outname, idx)
+  ```
+
+### Parameters
+
+- **`hh_params.m`**
+  ```matlab
+  P = hh_params(varargin)
+  ```
+  Returns a struct of HH parameters (conductances, reversals, capacitance, etc.).
+
+- **`sim_params.m`**
+  ```matlab
+  S = sim_params(dt, varargin)
+  ```
+  Returns a struct of simulation controls (time step, duration, clamp, recording indices, seeds, etc.).
+
+- **`gates.m`** — gating kinetics utilities (e.g., `X(v,ss,P)` and sub-functions for α/β rates).
+
+---
+
+## Outputs
+
+Scripts write into `output/` by default, creating subfolders per experiment, e.g.:
+
+- `output/sbdf2_results/*`
+- `output/strang0TR_results/*`
+- (figures: neuron views, time traces; optional videos via `makematlabmovtraces`)
+
+---
+
+## Reproducibility Tips
+
+- Always call `addpath('source')` in a fresh session.
+- Fix the random seed if any stochastic elements are added in future.
+- Record the exact `dt`, clamp indices, and SWC used in figure titles or filenames.
+- Use `saveOut=true` in `getgraphstructure` to capture logs + figures alongside data.
 
 ---
 
 ## Troubleshooting
 
-- **Blank/white figure on save:** set figure `'InvertHardcopy','off'` (already done).
-- **Minor “subgrid” lines visible:** in axes, set `XMinorGrid/YMinorGrid/ZMinorGrid` to `'off'` (done in `style_graypanel`).
-- **Colorbar placement inside axes:** we manually position with `'Location','manual'` and `InnerPosition`.
-- **Edges color don’t match nodes:** ensure you use `makematlabmovtraces` (interpolated edge colors from endpoints).
-- **Git ignoring generated frames:** add to `.gitignore`
-  ```
-  output/results/data/*
-  !output/results/data/.gitkeep
-  ```
+- **`readswc` returns NaNs or zeros**  
+  Ensure the SWC numeric lines don’t have unexpected delimiters; the provided parser tolerates leading spaces/tabs and `#` headers.
+
+- **Plots don’t show, but files appear**  
+  You likely ran with `saveOut=true` and `plt=false` (off-screen rendering). Set `plt=true` to display.
+
+- **No `.sln` found (Windows build scripts)**  
+  The MATLAB project does not require Visual Studio; the PowerShell helper scripts are for UG4 tooling in a separate workflow.
 
 ---
 
 ## License
 
-This project is provided under the terms in `LICENSE` (MIT-style). Please cite appropriately if you use this code in your work.
+See `LICENSE` in the repository root.
+
+---
