@@ -2,7 +2,7 @@ clamp_index = 1;
 recvect = (105); % for 2 ref.
 filename    = '../data/ref2.swc';
 outfolder   = '../output/sbdf2_results';
-dt = 0.5e-5;
+dt = 10.0e-5;
 
 [~, id, pid, coord, ~, ~] = readswc(filename);
 plotneuron3views(coord, id, pid,sprintf('%s/sbdf2neuron.png',outfolder));
