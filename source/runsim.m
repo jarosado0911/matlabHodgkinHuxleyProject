@@ -7,6 +7,7 @@ dt = 4.0e-5;
 [~, id, pid, coord, ~, ~] = readswc(filename);
 plotneuron3views(coord, id, pid,sprintf('%s/sbdf2neuron.png',outfolder));
 
+
 % make a figure
 figure(2)
 hold on
@@ -31,4 +32,4 @@ outfolder   = '../output/strang0RK4_results';
 strangsolve('rk4',dt,clamp_index,recvect,0,filename,outfolder,'STRANGF0-RK4',1);
 
 outfolder = '../output/sbdf2_results';
-makematlabmovtraces(outfolder,filename,sprintf('%s/sbdf2video',outfolder),1);
+makematlabmovtraces(outfolder,filename,sprintf('%s/sbdf2video',outfolder),recvect(1));

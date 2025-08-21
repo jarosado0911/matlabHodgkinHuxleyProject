@@ -8,7 +8,6 @@ function makematlabmovtraces(dataFolder, geometryFile, outname, idx)
     % ---------------- Geometry ----------------
     % need id & pid to build edges
     [~, id, pid, coords, r, ~]  = readswc(geometryFile);
-    [~,~,~,brchlst,~,~,~,~,~,~] = getgraphstructure(geometryFile,false,false,false); 
     markerSize = (r./max(r)) * 50;
 
     % child->parent connectivity (indices into coords)
@@ -33,12 +32,8 @@ function makematlabmovtraces(dataFolder, geometryFile, outname, idx)
     rec_h = tr.rec_h;    % B x T
     rec_n = tr.rec_n;    % B x T
     rec_m = tr.rec_m;    % B x T
-    if isfield(tr,'record_index'), nodes = tr.record_index(:); else, nodes = (1:size(rec_u,1)).'; end
-
-    [B,T] = size(rec_u);
-    if idx < 1 || idx > B || idx ~= floor(idx)
-        error('idx must be an integer in [1..%d]', B);
-    end
+    
+    [~,T] = size(rec_u);
     if numel(t) ~= T
         error('Length of t (%d) does not match time dimension of rec_* (%d).', numel(t), T);
     end
@@ -81,13 +76,7 @@ function makematlabmovtraces(dataFolder, geometryFile, outname, idx)
     hDots = scatter3(axLeft, coords(:,1), coords(:,2), coords(:,3), ...
                      markerSize, 'filled', 'CData', u0);
 
-    if iscell(brchlst), branch_idx = cell2mat(brchlst);
-    else,               branch_idx = brchlst(:);
-    end
-    if idx < 1 || idx > numel(branch_idx)
-        error('idx=%d out of range for brchlst (numel=%d).', idx, numel(branch_idx));
-    end
-    focusNode = branch_idx(idx);                  % coordinate index to highlight
+    focusNode = idx;                  % coordinate index to highlight
     focusSize = max(120, 4*markerSize(focusNode));% make it stand out
     hFocus = scatter3(axLeft, ...
         coords(focusNode,1), coords(focusNode,2), coords(focusNode,3), ...
@@ -121,13 +110,13 @@ function makematlabmovtraces(dataFolder, geometryFile, outname, idx)
     cb.Position = [leftCB, botCB, barLen, barThk];
 
     % ---------------- Right: time-series plots (init once) ----------------
-    yU = 1e3 * rec_u(idx,:).';
-    yH =        rec_h(idx,:).';
-    yN =        rec_n(idx,:).';
-    yM =        rec_m(idx,:).';
+    yU = 1e3 *  rec_u(1,:).';
+    yH =        rec_h(1,:).';
+    yN =        rec_n(1,:).';
+    yM =        rec_m(1,:).';
 
     hold(axU,'on'); pU = plot(axU, t, yU, 'LineWidth', 1.5); pU.Color=[0.9 0.95 1]; style_graypanel(axU);
-    ylabel(axU, sprintf('u @ node %d [mV]', nodes(idx)), 'Color','w'); title(axU,'rec\_u','Color','w');
+    ylabel(axU, sprintf('u @ node %d [mV]', idx), 'Color','w'); title(axU,'rec\_u','Color','w');
     xlim(axU, [t(1) t(end)]);
 
     hold(axH,'on'); pH = plot(axH, t, yH, 'LineWidth', 1.5); pH.Color=[1 0.9 0.6]; style_graypanel(axH);
