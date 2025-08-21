@@ -1,5 +1,29 @@
 classdef timestep
     methods (Static)
+        %--- TR-BDF2
+        function result = trbdf2(v,pp,dt,fun,P)
+             % Check if the optional parameter P is provided
+            if nargin < 5  % P is not provided
+                result = timestep.trbdf2S(v, pp, dt, fun);
+            else  % P is provided
+                result = timestep.trbdf2X(v, pp, dt, fun, P);
+            end 
+        end
+
+        function result = trbdf2S(v, pp, dt, fun)
+            a = fun(v,0); b = -1.*fun(v,1);
+            result = timestep.trS(v,pp,dt/2,fun);
+            result = (4/3).*result - (1/3).*pp+(1/3).*dt.*a;
+            result = result ./ (1+(1/3).*dt.*(a+b));
+        end
+
+        function result = trbdf2X(v, pp, dt, fun,P)
+            b = fun(0,pp,P); a = fun(1,pp,P)-b;
+            result = timestep.trX(v,pp,dt/2,fun,P);
+            result = (4/3).*result - (1/3.*v)+b.*(1/3).*dt;
+            result = result ./ (1-(1/3).*a.*dt);
+        end
+
         %--- Implicit Midpoint
         function result = mid(v,pp,dt,fun,P)
             % Check if the optional parameter P is provided
