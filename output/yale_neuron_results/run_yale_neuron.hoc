@@ -1,0 +1,96 @@
+load_file("stdlib.hoc")
+objref hoc_sf_
+hoc_sf_ = new StringFunctions()
+load_file("import3d.hoc")
+
+objref swc_, imp_
+swc_ = new Import3d_SWC_read()
+swc_.input("D:/matlabHodgkinHuxleyProject/source/../data/ref2.swc")
+imp_ = new Import3d_GUI(swc_, 0)
+imp_.instantiate(nil)
+
+// biophysics converted from hh_params.m (MKS) to NEURON units
+forall {
+    Ra = 300
+    cm = 1
+    insert hhcustom
+    gnabar_hhcustom = 0.05
+    gkbar_hhcustom  = 0.005
+    gl_hhcustom     = 0
+    el_hhcustom     = -70
+    ena = 50
+    ek  = -90
+    nseg = int((L/(0.1*lambda_f(100)))/2)*2 + 1
+}
+
+// nearest section/loc to a target 3D coordinate
+objref nearest_sec
+nearest_loc = 0.5
+proc find_nearest() { local i, d, best
+    best = 1e9
+    forall {
+        for (i=0; i < n3d(); i += 1) {
+            d = sqrt((x3d(i)-$1)*(x3d(i)-$1) + (y3d(i)-$2)*(y3d(i)-$2) + (z3d(i)-$3)*(z3d(i)-$3))
+            if (d < best) {
+                best = d
+                nearest_sec = new SectionRef()
+                if (L > 0) {
+                    nearest_loc = arc3d(i)/L
+                } else {
+                    nearest_loc = 0.5
+                }
+            }
+        }
+    }
+}
+
+find_nearest(0, 1.7764e-15, -1.1102e-16)
+objref clamp_secref
+clamp_secref = nearest_sec
+clamp_loc = nearest_loc
+
+find_nearest(-2.49, 785.71, -58.7)
+objref rec_secref
+rec_secref = nearest_sec
+rec_loc = nearest_loc
+
+// near-ideal voltage clamp at the soma, mirrors the Dirichlet
+// clamp_index update in sbdf2solve.m: free until delay, held at
+// vClamp until stop, then free again. dur3=0 is deliberate: a
+// nonzero-duration SEClamp phase keeps sinking/sourcing current
+// even with amp3=vStart, which weakly re-pins the soma instead of
+// truly freeing it - dur3=0 fully disconnects the clamp after
+// stop, matching sbdf2solve.m's unclamped branch exactly.
+objref vclamp_
+clamp_secref.sec { vclamp_ = new SEClamp(clamp_loc) }
+vclamp_.dur1 = 15
+vclamp_.amp1 = 0
+vclamp_.dur2 = 15
+vclamp_.amp2 = 50
+vclamp_.dur3 = 0
+vclamp_.amp3 = 0
+vclamp_.rs   = 1e-3
+
+objref tvec_, vvec_
+tvec_ = new Vector()
+vvec_ = new Vector()
+tvec_.record(&t)
+rec_secref.sec { vvec_.record(&v(rec_loc)) }
+
+secondorder = 1
+dt = 0.001
+tstop = 50
+finitialize(0)
+while (t < tstop) {
+    fadvance()
+}
+
+objref outfile_
+outfile_ = new File()
+outfile_.wopen("D:/matlabHodgkinHuxleyProject/source/../output/yale_neuron_results/trace_yale_neuron.csv")
+for i_ = 0, tvec_.size()-1 {
+    outfile_.printf("%g,%g\n", tvec_.x[i_], vvec_.x[i_])
+}
+outfile_.close()
+
+quit()
